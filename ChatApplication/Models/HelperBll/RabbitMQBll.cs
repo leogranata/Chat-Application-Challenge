@@ -11,7 +11,9 @@ namespace ChatApplication.Models.HelperBll
 {
     public class RabbitMQBll
     {
-        public IConnection GetConnection()
+        private const int max_queue_length = 5;
+
+        public ConnectionFactory GetConnectionFactory()
         {
             ConnectionFactory factory = new ConnectionFactory();
             factory.UserName = "guest";
@@ -19,29 +21,34 @@ namespace ChatApplication.Models.HelperBll
             factory.Port = 5672;
             factory.HostName = "localhost";
             factory.VirtualHost = "/";
-            // factory.Uri = "http://192.168.7.140:15672/";
-            return factory.CreateConnection();
+            return factory;
         }
-        public bool send(IConnection con, string message, int roomId, int userId)
+        public bool send(string message, int roomId, int userId)
         {
             try
             {
+                using (var connection = GetConnectionFactory().CreateConnection())
+                {
+                    using (var channel = connection.CreateModel())
+                    {
+                        var properties = channel.CreateBasicProperties();
+                        Dictionary<string, object> headerProps = new Dictionary<string, object>();
+                        headerProps.Add("UserId", userId);
+                        headerProps.Add("RoomId", roomId);
+                        properties.Headers = headerProps;
 
-                IModel channel = con.CreateModel();
-                var properties = channel.CreateBasicProperties();
-                Dictionary<string, object> headerProps = new Dictionary<string, object>();
-                headerProps.Add("UserId", userId);
-                headerProps.Add("RoomId", roomId);
-                properties.Headers = headerProps;
+                        string queue = GetQueueName(roomId, userId);
 
-                string queue = GetQueueName(roomId, userId);
+                        channel.ExchangeDeclare("ChatAppExchange", ExchangeType.Direct);
+                        Dictionary<string, object> max_length = new Dictionary<string, object>();
+                        max_length.Add("x-max-length", max_queue_length);
 
-                channel.ExchangeDeclare("ChatExchange", ExchangeType.Fanout);
-                channel.QueueDeclare(queue, true, false, false, null);
-                channel.QueueBind(queue, "ChatExchange", queue, null);
-                var msg = Encoding.UTF8.GetBytes(message);
-                channel.BasicPublish("ChatExchange", queue, properties, msg);
-                //channel.BasicPublish("ChatExchange", roomqueue, null, msg);
+                        channel.QueueDeclare(queue, true, false, false, max_length);
+                        channel.QueueBind(queue, "ChatAppExchange", queue, null);
+                        var msg = Encoding.UTF8.GetBytes(message);
+                        channel.BasicPublish("ChatAppExchange", queue, properties, msg);
+                    }
+                }
 
             }
             catch (Exception ex)
@@ -51,45 +58,60 @@ namespace ChatApplication.Models.HelperBll
             return true;
 
         }
-        public string receive(IConnection con, int roomId, int userId)
+
+        [Obsolete]
+        public string receive(int roomId, int userId)
         {
             try
             {
                 string queue = GetQueueName(roomId, userId);
+                StringBuilder response = new StringBuilder();
 
-
-                IModel channel = con.CreateModel();
-                channel.QueueDeclare(queue: queue, durable: true, exclusive: false, autoDelete: false, arguments: null);
-                var consumer = new EventingBasicConsumer(channel);
-                BasicGetResult result = channel.BasicGet(queue: queue, autoAck: true);
-                if (result != null)
+                using (var connection = GetConnectionFactory().CreateConnection())
                 {
-                    // check that the message is not from the current user
-                    int messageUserId = (int)result.BasicProperties.Headers["UserId"];
-                    int messageRoomId = (int)result.BasicProperties.Headers["RoomId"];
-                    if (userId == messageUserId || messageRoomId != roomId)
-                        return null;
+                    using (var channel = connection.CreateModel())
+                    {
+                        Dictionary<string, object> max_length = new Dictionary<string, object>();
+                        max_length.Add("x-max-length", max_queue_length);
 
-                    // Get User name
-                    DataLayer dl = new DataLayer();
-                    UserModel user = dl.GetUserById(messageUserId);
-                    return user.username + ":" + Encoding.UTF8.GetString(result.Body);
+                        var queueDeclareResponse = channel.QueueDeclare(GetQueueName(roomId, userId), true, false, false, max_length);
+
+                        var consumer = new QueueingBasicConsumer(channel);
+                        channel.BasicConsume(GetQueueName(roomId, userId), false, consumer);
+
+                        if (queueDeclareResponse.MessageCount == 0) return null;
+
+                        for (int i = 0; i < queueDeclareResponse.MessageCount; i++)
+                        {
+                            var ea = (BasicDeliverEventArgs)consumer.Queue.Dequeue();
+                            var body = ea.Body;
+                            var message = Encoding.UTF8.GetString(body);
+                            var messageUserId = (int)ea.BasicProperties.Headers["UserId"];
+                            var messageRoomId = (int)ea.BasicProperties.Headers["RoomId"];
+                            // If the message we are receiving is for this room
+                            // and it has been generated by a different user
+                            // add to the response
+                            if (messageRoomId == roomId)
+                            {
+                                DataLayer dl = new DataLayer();
+                                UserModel user = dl.GetUserById(messageUserId);
+                                response.AppendLine("<br>" + user.username + ":" + Encoding.UTF8.GetString(body));
+                            }
+                        }
+                        return response.ToString();
+                    }
                 }
-                else
-                    return null;
             }
             catch (Exception ex)
             {
                 return null;
-
             }
-
 
         }
 
         public static string GetQueueName(int roomId, int userId)
         {
-            return String.Format("UserId={0}-Room={1}", userId, roomId);
+            return String.Format("Room={1}", userId, roomId);
         }
     }
 

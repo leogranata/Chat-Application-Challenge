@@ -93,14 +93,14 @@
                     url: "@Url.Action("receive")",
                     dataType: "json",
                     success: function (response) {
-                        var data = $("#divmsg").html();
-                        $("#divmsg").html(data + "<br>" + response);
+                        //var data = $("#divmsg").html();
+                        $("#divmsg").html(response);
                     },
                     error: function (response) {
 
                     }
                 });
-            }, 1000);
+            }, 5000);
             function send() {
                 var message = $("#txtmsg").val();
                 var room = $("#ddlroom").val();
