@@ -1,0 +1,3 @@
+﻿Generated model file: ChatDBModel.edmx.
+Loading metadata from the database took 00:00:00.5282259.
+Generating the model took 00:00:00.9550801.
