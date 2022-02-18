@@ -11,7 +11,7 @@ namespace ChatApplication.Models.HelperBll
 {
     public class RabbitMQBll
     {
-        private const int max_queue_length = 5;
+        private const int max_queue_length = 50;
 
         public ConnectionFactory GetConnectionFactory()
         {
@@ -95,7 +95,7 @@ namespace ChatApplication.Models.HelperBll
                             {
                                 DataLayer dl = new DataLayer();
                                 UserModel user = dl.GetUserById(messageUserId);
-                                response.AppendLine("<br>" + user.username + ":" + Encoding.UTF8.GetString(body));
+                                response.AppendLine((messageUserId == userId ? "Me:" : user.username) + ":" + Encoding.UTF8.GetString(body) + "<br>");
                             }
                         }
                         return response.ToString();
@@ -111,7 +111,7 @@ namespace ChatApplication.Models.HelperBll
 
         public static string GetQueueName(int roomId, int userId)
         {
-            return String.Format("Room={1}", userId, roomId);
+            return String.Format("ChatRoom={1}", userId, roomId);
         }
     }
 

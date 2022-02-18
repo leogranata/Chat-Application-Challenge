@@ -105,9 +105,9 @@
                 var message = $("#txtmsg").val();
                 var room = $("#ddlroom").val();
                 var data = $("#divmsg").html();
-                $("#divmsg").html(data + "<br>Me:" + message);
+                $("#divmsg").html(data + "Me:" + message + "<br>");
                 $("#txtmsg").val("");
-                debugger;
+                
                 $.ajax({
                     type: "POST",
                     contentType: "application/json; charset=utf-8",
@@ -116,9 +116,10 @@
                     dataType: "json",
                     success: function (response) {
                         var data = $("#divmsg").html();
-                        $("#divmsg").html(data + "<br>Me :" + message);
+                        return $("#divmsg").html(data + "Me :" + message + "<br>");
+                    },
+                    complete: function (response) {
                         $('.panel-footer').scrollTop($(".panel-footer")[0].scrollHeight);
-
                     },
                     error: function (response) {
 
@@ -129,9 +130,6 @@
             function switchToRoom() {
                 var room = $("#ddlroom").val();
                 var data = $("#divmsg").html();
-                //$("#divmsg").html(data + "<br>Me:" + message);
-                //$("#txtmsg").val("");
-                debugger;
                 $.ajax({
                     type: "POST",
                     contentType: "application/json; charset=utf-8",
