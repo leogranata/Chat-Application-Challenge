@@ -27,31 +27,12 @@ namespace ChatApplication.Models.HelperBll
         {
             try
             {
+                string queue = GetQueueName(roomId, userId);
+
                 using (var connection = GetConnectionFactory().CreateConnection())
                 {
                     using (var channel = connection.CreateModel())
                     {
-                        var properties = channel.CreateBasicProperties();
-                        Dictionary<string, object> headerProps = new Dictionary<string, object>
-                        {
-                            { "UserId", userId },
-                            { "RoomId", roomId }
-                        };
-                        properties.Headers = headerProps;
-
-                        string queue = GetQueueName(roomId, userId);
-
-                        channel.ExchangeDeclare("ChatAppExchange", ExchangeType.Direct);
-                        Dictionary<string, object> max_length = new Dictionary<string, object>
-                        {
-                            { "x-max-length", max_queue_length }
-                        };
-
-                        channel.QueueDeclare(queue, true, false, false, max_length);
-                        channel.QueueBind(queue, "ChatAppExchange", queue, null);
-                        var msg = Encoding.UTF8.GetBytes(message);
-                        channel.BasicPublish("ChatAppExchange", queue, properties, msg);
-
                         // Pass to Bot Manager to process if needed
                         if (message.StartsWith("/") && message.Contains("="))
                         {
@@ -69,6 +50,27 @@ namespace ChatApplication.Models.HelperBll
                                 var responseBytes = Encoding.UTF8.GetBytes(response);
                                 channel.BasicPublish("ChatAppExchange", queue, botResponseProps, responseBytes);
                             }
+                        }
+                        else
+                        {
+                            var properties = channel.CreateBasicProperties();
+                            Dictionary<string, object> headerProps = new Dictionary<string, object>
+                            {
+                                { "UserId", userId },
+                                { "RoomId", roomId }
+                            };
+                            properties.Headers = headerProps;
+
+                            channel.ExchangeDeclare("ChatAppExchange", ExchangeType.Direct);
+                            Dictionary<string, object> max_length = new Dictionary<string, object>
+                            {
+                                { "x-max-length", max_queue_length }
+                            };
+
+                            channel.QueueDeclare(queue, true, false, false, max_length);
+                            channel.QueueBind(queue, "ChatAppExchange", queue, null);
+                            var msg = Encoding.UTF8.GetBytes(message);
+                            channel.BasicPublish("ChatAppExchange", queue, properties, msg);
                         }
                     }
                 }
@@ -123,7 +125,7 @@ namespace ChatApplication.Models.HelperBll
                                     DataLayer dl = new DataLayer();
                                     UserModel user = dl.GetUserById(messageUserId);
                                     response.AppendLine((messageUserId == userId ? "Me:" : user.username) + ":" + Encoding.UTF8.GetString(body) + "<br>");
-                                } 
+                                }
                                 else
                                 {
                                     response.AppendLine(Encoding.UTF8.GetString(body) + "<br>");
