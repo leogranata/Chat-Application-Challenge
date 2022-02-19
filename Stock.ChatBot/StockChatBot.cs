@@ -16,7 +16,7 @@ namespace Stock.ChatBot
 
         public string ExecuteCommand(string command, string arguments)
         {
-            return "this comes from the BOT - Command:" + command + ", arguments:" + arguments;
+            return StooqApi.GetData(arguments);
         }
 
         public string GetBotName()
@@ -26,7 +26,7 @@ namespace Stock.ChatBot
 
         public bool IsCommandSupported(string command)
         {
-            if (command == "test") return true;
+            if (command == "stock") return true;
             return false;
         }
     }
