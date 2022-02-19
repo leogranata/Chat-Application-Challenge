@@ -22,14 +22,5 @@ namespace BotManager.Properties {
                 return defaultInstance;
             }
         }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Stock.ChatBot")]
-        public string ChatBots {
-            get {
-                return ((string)(this["ChatBots"]));
-            }
-        }
     }
 }

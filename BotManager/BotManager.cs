@@ -9,33 +9,25 @@ namespace BotManager
 {
     public class BotManager
     {
-        private Dictionary<string, IBot> bots = new Dictionary<string, IBot>();
+        Dictionary<string, IBot> bots = new Dictionary<string, IBot>();
         public BotManager()
         {
-            // Get chatbots from configuration
-            string chatBots = Properties.Settings.Default.ChatBots;
-            string[] chatbotList = chatBots.Split(',');
-            foreach (string botClass in chatbotList)
-            {
-                // Create instance of bot
-                var type = Type.GetType("botClass");
-                var chatObject = (IBot)Activator.CreateInstance(type);
-                RegisterBot(chatObject.GetBotName(), chatObject);
-            }
-            
+            Stock.ChatBot.StockChatBot stockChatBot = new Stock.ChatBot.StockChatBot();
+
+            RegisterBot(stockChatBot.GetBotName(), stockChatBot);
         }
 
         public string ExecuteCommand (string commandMessage)
         {
-            string response = string.Empty;
+            string response = null;
             string commandName = ExtractCommandName(commandMessage);
             string commandArgs = ExtractCommandArguments(commandMessage);
 
             foreach (IBot bot in bots.Values)
             {
-                if (bot.isCommandSupported(commandName))
+                if (bot.IsCommandSupported(commandName))
                 {
-                    response = "<b>" + bot.GetBotName() + ":" + bot.ExecuteCommand(commandName, commandArgs);
+                    response = "<b>" + bot.GetBotName() + "</b>: " + bot.ExecuteCommand(commandName, commandArgs);
                 }
             }
             return response;

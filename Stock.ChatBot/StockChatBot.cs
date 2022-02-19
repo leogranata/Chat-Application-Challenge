@@ -9,9 +9,14 @@ namespace Stock.ChatBot
 {
     public class StockChatBot : IBot
     {
+        public StockChatBot()
+        {
+
+        }
+
         public string ExecuteCommand(string command, string arguments)
         {
-            return "this comes from the BOT - Command:" + command + " arguments:" + arguments;
+            return "this comes from the BOT - Command:" + command + ", arguments:" + arguments;
         }
 
         public string GetBotName()
@@ -19,7 +24,7 @@ namespace Stock.ChatBot
             return "Stock Bot";
         }
 
-        public bool isCommandSupported(string command)
+        public bool IsCommandSupported(string command)
         {
             if (command == "test") return true;
             return false;

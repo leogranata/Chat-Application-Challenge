@@ -35,7 +35,7 @@ namespace ChatApplication.Controllers
             int currentUserid = Convert.ToInt32(Session["userid"].ToString());
             int currentRoomId = Convert.ToInt32(room);
             RabbitMQBll obj = new RabbitMQBll();
-            bool flag = obj.send(message, currentRoomId, currentUserid);
+            bool flag = obj.Send(message, currentRoomId, currentUserid);
             return Json(null);
         }
         [HttpPost]
@@ -52,7 +52,7 @@ namespace ChatApplication.Controllers
                 int currentUserid = Convert.ToInt32(Session["userid"].ToString());
                 int currentRoomId = Convert.ToInt32(room);
                 RabbitMQBll obj = new RabbitMQBll();
-                string message = obj.receive(currentRoomId, currentUserid);
+                string message = obj.Receive(currentRoomId, currentUserid);
                 return Json(message);
                 //return Json("mock received");
             }

@@ -54,6 +54,10 @@
       <Project>{0c75d9a3-aafe-4f69-b9ba-aa6601a32c84}</Project>
       <Name>Common.ChatBot</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Stock.ChatBot\Stock.ChatBot.csproj">
+      <Project>{eaae0b81-19bc-4580-a726-b82cd53c42d4}</Project>
+      <Name>Stock.ChatBot</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

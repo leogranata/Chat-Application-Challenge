@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using RabbitMQ.Client;
-using RabbitMQ.Util;
 using RabbitMQ.Client.Events;
 using System.Text;
+using BotManager;
 
 namespace ChatApplication.Models.HelperBll
 {
@@ -15,15 +13,17 @@ namespace ChatApplication.Models.HelperBll
 
         public ConnectionFactory GetConnectionFactory()
         {
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.UserName = "guest";
-            factory.Password = "guest";
-            factory.Port = 5672;
-            factory.HostName = "localhost";
-            factory.VirtualHost = "/";
+            ConnectionFactory factory = new ConnectionFactory
+            {
+                UserName = "guest",
+                Password = "guest",
+                Port = 5672,
+                HostName = "localhost",
+                VirtualHost = "/"
+            };
             return factory;
         }
-        public bool send(string message, int roomId, int userId)
+        public bool Send(string message, int roomId, int userId)
         {
             try
             {
@@ -32,21 +32,44 @@ namespace ChatApplication.Models.HelperBll
                     using (var channel = connection.CreateModel())
                     {
                         var properties = channel.CreateBasicProperties();
-                        Dictionary<string, object> headerProps = new Dictionary<string, object>();
-                        headerProps.Add("UserId", userId);
-                        headerProps.Add("RoomId", roomId);
+                        Dictionary<string, object> headerProps = new Dictionary<string, object>
+                        {
+                            { "UserId", userId },
+                            { "RoomId", roomId }
+                        };
                         properties.Headers = headerProps;
 
                         string queue = GetQueueName(roomId, userId);
 
                         channel.ExchangeDeclare("ChatAppExchange", ExchangeType.Direct);
-                        Dictionary<string, object> max_length = new Dictionary<string, object>();
-                        max_length.Add("x-max-length", max_queue_length);
+                        Dictionary<string, object> max_length = new Dictionary<string, object>
+                        {
+                            { "x-max-length", max_queue_length }
+                        };
 
                         channel.QueueDeclare(queue, true, false, false, max_length);
                         channel.QueueBind(queue, "ChatAppExchange", queue, null);
                         var msg = Encoding.UTF8.GetBytes(message);
                         channel.BasicPublish("ChatAppExchange", queue, properties, msg);
+
+                        // Pass to Bot Manager to process if needed
+                        if (message.StartsWith("/") && message.Contains("="))
+                        {
+                            BotManager.BotManager botMgr = new BotManager.BotManager();
+                            string response = botMgr.ExecuteCommand(message);
+                            if (response != null)
+                            {
+                                var botResponseProps = channel.CreateBasicProperties();
+                                Dictionary<string, object> botHeaderProps = new Dictionary<string, object>
+                                {
+                                    { "UserId", -1 },
+                                    { "RoomId", roomId }
+                                };
+                                botResponseProps.Headers = botHeaderProps;
+                                var responseBytes = Encoding.UTF8.GetBytes(response);
+                                channel.BasicPublish("ChatAppExchange", queue, botResponseProps, responseBytes);
+                            }
+                        }
                     }
                 }
 
@@ -60,7 +83,7 @@ namespace ChatApplication.Models.HelperBll
         }
 
         [Obsolete]
-        public string receive(int roomId, int userId)
+        public string Receive(int roomId, int userId)
         {
             try
             {
@@ -71,8 +94,10 @@ namespace ChatApplication.Models.HelperBll
                 {
                     using (var channel = connection.CreateModel())
                     {
-                        Dictionary<string, object> max_length = new Dictionary<string, object>();
-                        max_length.Add("x-max-length", max_queue_length);
+                        Dictionary<string, object> max_length = new Dictionary<string, object>
+                        {
+                            { "x-max-length", max_queue_length }
+                        };
 
                         var queueDeclareResponse = channel.QueueDeclare(GetQueueName(roomId, userId), true, false, false, max_length);
 
@@ -93,9 +118,16 @@ namespace ChatApplication.Models.HelperBll
                             // add to the response
                             if (messageRoomId == roomId)
                             {
-                                DataLayer dl = new DataLayer();
-                                UserModel user = dl.GetUserById(messageUserId);
-                                response.AppendLine((messageUserId == userId ? "Me:" : user.username) + ":" + Encoding.UTF8.GetString(body) + "<br>");
+                                if (messageUserId != -1)
+                                {
+                                    DataLayer dl = new DataLayer();
+                                    UserModel user = dl.GetUserById(messageUserId);
+                                    response.AppendLine((messageUserId == userId ? "Me:" : user.username) + ":" + Encoding.UTF8.GetString(body) + "<br>");
+                                } 
+                                else
+                                {
+                                    response.AppendLine(Encoding.UTF8.GetString(body) + "<br>");
+                                }
                             }
                         }
                         return response.ToString();

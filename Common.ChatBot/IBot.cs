@@ -9,7 +9,7 @@ namespace Common.ChatBot
     public interface IBot
     {
         string ExecuteCommand(string command, string arguments);
-        bool isCommandSupported(string command);
+        bool IsCommandSupported(string command);
         string GetBotName();
     }
 }
