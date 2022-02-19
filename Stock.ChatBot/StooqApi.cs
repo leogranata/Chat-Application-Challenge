@@ -24,9 +24,9 @@ namespace Stock.ChatBot
                 string[] responseElements = responseText.Split(',');
                 return string.Format("{0} quote is ${1} per share", symbol.ToUpper(), responseElements[13]);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return string.Format("Error Trying to call Stock Market API with URL {0}", requestUrl);
+                return string.Format("Error Trying to call Stock Market API with URL {0} \nError:\n{1}", requestUrl, ex.ToString());
             }
         }
 

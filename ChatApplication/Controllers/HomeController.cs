@@ -12,7 +12,7 @@ namespace ChatApplication.Controllers
 {
     public class HomeController : Controller
     {
-        DataLayer dl = new DataLayer();
+        private DataLayer dl = new DataLayer();
         // GET: Home
         public ActionResult Index()
         {
@@ -26,7 +26,7 @@ namespace ChatApplication.Controllers
             }
         }
         [HttpPost]
-        public JsonResult sendmsg(string message, string room)
+        public JsonResult Sendmsg(string message, string room)
         {
             if (Session["userid"] == null)
             {
@@ -35,17 +35,18 @@ namespace ChatApplication.Controllers
             int currentUserid = Convert.ToInt32(Session["userid"].ToString());
             int currentRoomId = Convert.ToInt32(room);
             RabbitMQBll obj = new RabbitMQBll();
-            bool flag = obj.Send(message, currentRoomId, currentUserid);
+            obj.Send(message, currentRoomId, currentUserid);
             return Json(null);
         }
         [HttpPost]
-        public JsonResult switchToRoom(string room)
+        public JsonResult SwitchToRoom(string room)
         {
             dl.SwitchToRoom(Convert.ToInt32(Session["userid"]), Convert.ToInt32(room));
             return Json(null);
         }
         [HttpPost]
-        public JsonResult receive(string room)
+        [Obsolete]
+        public JsonResult Receive(string room)
         {
             try
             {
@@ -54,23 +55,21 @@ namespace ChatApplication.Controllers
                 RabbitMQBll obj = new RabbitMQBll();
                 string message = obj.Receive(currentRoomId, currentUserid);
                 return Json(message);
-                //return Json("mock received");
             }
             catch (Exception ex)
             {
-
-                return null;
+                return Json("Error: " + ex.Message);
             }
 
 
         }
-        public ActionResult login()
+        public ActionResult Login()
         {
 
             return View();
         }
         [HttpPost]
-        public ActionResult login(FormCollection fc)
+        public ActionResult Login(FormCollection fc)
         {
             string email = fc["txtemail"].ToString();
             string password = fc["txtpassword"].ToString();
@@ -94,7 +93,7 @@ namespace ChatApplication.Controllers
         }
 
         [HttpPost]
-        public JsonResult connectedUserList(string room)
+        public JsonResult ConnectedUserList(string room)
         {
             int roomId = Convert.ToInt32(room);
             List<UserModel> users = dl.GetConnectedUsers(roomId);
@@ -117,9 +116,8 @@ namespace ChatApplication.Controllers
         }
 
         [HttpPost]
-        public JsonResult roomList()
+        public JsonResult RoomList()
         {
-            int currentUserid = Convert.ToInt32(Session["userid"].ToString());
             List<RoomModel> rooms = dl.GetAvailableRooms();
             List<ListItem> roomList = new List<ListItem>();
             foreach (var item in rooms)

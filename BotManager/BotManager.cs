@@ -9,7 +9,7 @@ namespace BotManager
 {
     public class BotManager
     {
-        Dictionary<string, IBot> bots = new Dictionary<string, IBot>();
+        private Dictionary<string, IBot> bots = new Dictionary<string, IBot>();
         public BotManager()
         {
             Stock.ChatBot.StockChatBot stockChatBot = new Stock.ChatBot.StockChatBot();

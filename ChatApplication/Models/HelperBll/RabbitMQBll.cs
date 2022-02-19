@@ -136,7 +136,7 @@ namespace ChatApplication.Models.HelperBll
             }
             catch (Exception ex)
             {
-                return null;
+                return "Error: " + ex.Message;
             }
 
         }
